@@ -121,11 +121,13 @@
     function filterData() {
         let filteredData = allData;
 
-        // 搜索过滤
+        // 搜索过滤（支持队伍名称和学校名称）
         if (searchQuery) {
-            filteredData = filteredData.filter(team => 
-                team.team_name.toLowerCase().includes(searchQuery)
-            );
+            filteredData = filteredData.filter(team => {
+                const teamName = (team.team_name || '').toLowerCase();
+                const schoolName = (team.school || '').toLowerCase();
+                return teamName.includes(searchQuery) || schoolName.includes(searchQuery);
+            });
         }
 
         // 显示数据

@@ -1,0 +1,231 @@
+/* CTFd-Paihangb 排行榜样式 */
+
+/* 赛道切换按钮 */
+.track-btn {
+    font-size: 1.1rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.track-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.track-btn.active {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+    box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+}
+
+.track-btn i {
+    margin-right: 5px;
+}
+
+/* 筛选器卡片 */
+.card {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* 表格样式 */
+#scoreboardTable {
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+#scoreboardTable thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+#scoreboardTable thead th {
+    color: white;
+    font-weight: 600;
+    border: none;
+    padding: 1rem;
+}
+
+#scoreboardTable tbody tr {
+    transition: all 0.2s ease;
+}
+
+#scoreboardTable tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: scale(1.01);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 排名徽章 */
+.rank-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 1.2rem;
+    min-width: 50px;
+    text-align: center;
+}
+
+.rank-1 {
+    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    color: #333;
+    box-shadow: 0 4px 8px rgba(253, 160, 133, 0.4);
+}
+
+.rank-2 {
+    background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
+    color: #333;
+    box-shadow: 0 4px 8px rgba(189, 189, 189, 0.4);
+}
+
+.rank-3 {
+    background: linear-gradient(135deg, #ffb347 0%, #ff7e5f 100%);
+    color: white;
+    box-shadow: 0 4px 8px rgba(255, 126, 95, 0.4);
+}
+
+.rank-badge.rank-other {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* 赛道徽章 */
+.track-badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.track-新生赛道 {
+    background-color: #28a745;
+    color: white;
+}
+
+.track-进阶赛道 {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.track-社会赛道 {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* 分数动画 */
+.score-cell {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.solve-count {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #28a745;
+}
+
+/* 信息提示 */
+.alert-info {
+    border-left: 4px solid #17a2b8;
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+/* 空状态 */
+#emptyState i {
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+/* 加载动画 */
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .track-btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .btn-group {
+        flex-wrap: wrap;
+    }
+    
+    .btn-group .track-btn {
+        margin-bottom: 0.5rem;
+    }
+    
+    #filterForm {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    #filterForm .form-group {
+        margin-bottom: 1rem;
+        width: 100%;
+    }
+    
+    #filterForm .form-group label {
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* 表格滚动条样式 */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* 团队名称链接 */
+.team-link {
+    color: #333;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.team-link:hover {
+    color: #007bff;
+    text-decoration: underline;
+}
+
+/* 学校名称 */
+.school-name {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+

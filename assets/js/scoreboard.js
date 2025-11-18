@@ -148,11 +148,14 @@
         data.forEach((team, index) => {
             const rank = index + 1;
             const rankClass = rank <= 3 ? `rank-${rank}` : 'rank-other';
+            const rankDisplay = getRankDisplay(rank);
+            const school = team.school || '未填写';
+            const track = team.track || '未分配';
             
             html += `
                 <tr>
                     <td class="text-center">
-                        <span class="rank-badge ${rankClass}">${rank}</span>
+                        <span class="rank-badge ${rankClass}">${rankDisplay}</span>
                     </td>
                     <td>
                         <a href="/teams/${team.team_id}" class="team-link">
@@ -160,19 +163,42 @@
                         </a>
                     </td>
                     <td class="text-center">
-                        <span class="school-name">${escapeHtml(team.school)}</span>
+                        <span class="school-name">${escapeHtml(school)}</span>
                     </td>
                     <td class="text-center">
-                        <span class="badge track-badge track-${team.track}">${escapeHtml(team.track)}</span>
+                        ${getTrackBadge(track)}
                     </td>
-                    <td class="text-center solve-count">${team.solve_count}</td>
-                    <td class="text-center score-cell">${team.score}</td>
+                    <td class="text-center score-cell">${team.score || 0}</td>
                 </tr>
             `;
         });
 
         scoreboardBody.innerHTML = html;
         teamCountSpan.textContent = data.length;
+    }
+    
+    /**
+     * 获取排名显示
+     */
+    function getRankDisplay(rank) {
+        if (rank === 1) return '🥇';
+        if (rank === 2) return '🥈';
+        if (rank === 3) return '🥉';
+        return rank;
+    }
+    
+    /**
+     * 获取赛道徽章
+     */
+    function getTrackBadge(track) {
+        const trackColors = {
+            '新生赛道': 'success',
+            '进阶赛道': 'info',
+            '社会赛道': 'secondary',
+            '未分配': 'dark'
+        };
+        const color = trackColors[track] || 'secondary';
+        return `<span class="badge bg-${color}">${escapeHtml(track)}</span>`;
     }
 
     /**
@@ -183,7 +209,7 @@
         emptyState.style.display = 'none';
         scoreboardBody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center py-5">
+                <td colspan="5" class="text-center py-5">
                     <div class="spinner-border text-primary" role="status">
                         <span class="sr-only">Loading...</span>
                     </div>
@@ -210,7 +236,7 @@
         emptyState.style.display = 'none';
         scoreboardBody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center text-danger py-5">
+                <td colspan="5" class="text-center text-danger py-5">
                     <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
                     <p>${message}</p>
                 </td>

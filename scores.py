@@ -93,10 +93,35 @@ def get_track_team_ids(track_name):
     return team_ids
 
 
+def get_team_custom_field(team_id, field_name):
+    """
+    获取团队的自定义字段值
+    
+    Args:
+        team_id: 团队 ID
+        field_name: 字段名称
+    
+    Returns:
+        字段值或空字符串
+    """
+    field = TeamFields.query.filter_by(name=field_name).first()
+    if not field:
+        return ""
+    
+    entry = TeamFieldEntries.query.filter_by(
+        team_id=team_id,
+        field_id=field.id
+    ).first()
+    
+    if entry and entry.value:
+        return entry.value
+    return ""
+
+
 @cache.memoize(timeout=60)
 def get_standings(track=None, count=None, admin=False):
     """
-    获取排行榜数据
+    获取排行榜数据，包含学校和赛道信息
     
     Args:
         track: 赛道筛选（None=全部, 新生赛道, 进阶赛道, 社会赛道）
@@ -104,7 +129,7 @@ def get_standings(track=None, count=None, admin=False):
         admin: 是否管理员视图
     
     Returns:
-        排行榜数据列表
+        排行榜数据列表，每项包含 account_id, name, score, school, track
     """
     Model = get_model()
     sumscores = get_scores(admin)
@@ -149,7 +174,28 @@ def get_standings(track=None, count=None, admin=False):
     else:
         standings = standings_query.all()
     
-    return standings
+    # 为每个团队添加学校和赛道信息
+    enriched_standings = []
+    for standing in standings:
+        school = get_team_custom_field(standing.account_id, "学校名称")
+        team_track = get_team_custom_field(standing.account_id, "参与赛道")
+        
+        # 创建一个包含额外信息的对象
+        enriched_standing = type('Standing', (), {
+            'account_id': standing.account_id,
+            'name': standing.name,
+            'score': standing.score,
+            'school': school,
+            'track': team_track,
+        })()
+        
+        if admin:
+            enriched_standing.hidden = standing.hidden
+            enriched_standing.banned = standing.banned
+        
+        enriched_standings.append(enriched_standing)
+    
+    return enriched_standings
 
 
 @cache.memoize(timeout=60)

@@ -18,7 +18,7 @@ from .scores import (
 
 def format_standings(standings):
     """
-    格式化排行榜数据为 JSON
+    格式化排行榜数据为 JSON，包含学校和赛道信息
     """
     response = []
     for rank, team in enumerate(standings, start=1):
@@ -26,7 +26,9 @@ def format_standings(standings):
             "rank": rank,
             "team_id": team.account_id,
             "team_name": team.name,
-            "score": float(team.score) if team.score else 0.0
+            "score": float(team.score) if team.score else 0.0,
+            "school": getattr(team, 'school', ''),
+            "track": getattr(team, 'track', '')
         })
     return response
 
@@ -69,6 +71,53 @@ def register_routes(app):
     
     # 注册命名空间
     api.add_namespace(top10_namespace, "/top10")
+    
+    # 添加完整的排行榜数据 API（支持赛道和学校筛选）
+    @api_bp.route('/scoreboard/data')
+    @check_score_visibility
+    def get_scoreboard_data():
+        """
+        获取排行榜数据，支持赛道和学校筛选
+        参数:
+            track: 赛道名称（可选）
+            school: 学校名称（可选）
+        """
+        try:
+            from flask import request
+            
+            track_param = request.args.get('track')
+            school_param = request.args.get('school')
+            
+            # 根据赛道获取数据
+            if track_param and track_param != 'all':
+                if track_param == '新生赛道':
+                    standings = get_new_standings()
+                elif track_param == '进阶赛道':
+                    standings = get_upper_standings()
+                elif track_param == '社会赛道':
+                    standings = get_social_standings()
+                else:
+                    standings = get_all_standings()
+            else:
+                standings = get_all_standings()
+            
+            # 格式化数据
+            formatted_data = format_standings(standings)
+            
+            # 学校筛选（后端过滤）
+            if school_param and school_param != 'all':
+                formatted_data = [
+                    team for team in formatted_data 
+                    if team.get('school', '') == school_param
+                ]
+            
+            return jsonify({"success": True, "data": formatted_data})
+        
+        except Exception as e:
+            print(f"[ctfd-paihangb] API 错误: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({"success": False, "message": str(e)}), 500
     
     # 添加获取赛道团队 ID 的路由（用于前端筛选）
     @api_bp.route('/teams/track/<string:track_name>')

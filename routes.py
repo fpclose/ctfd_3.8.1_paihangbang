@@ -1,9 +1,9 @@
 """
-路由处理，提供分赛道排行榜 API
+路由处理，提供分赛道排行榜 API 和页面
 """
 
 import json
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, render_template
 from flask_restx import Api, Namespace, Resource
 
 from CTFd.utils.decorators.visibility import check_score_visibility
@@ -115,6 +115,46 @@ def register_routes(app):
     # 注册蓝图
     app.register_blueprint(api_bp)
     
-    print("[ctfd-paihangb] API 路由注册成功")
+    # 创建页面路由蓝图
+    page_bp = Blueprint(
+        "ctfd_paihangb_pages",
+        __name__,
+        template_folder="templates",
+        static_folder="assets",
+        url_prefix="/scoreboard"
+    )
+    
+    @page_bp.route('/custom')
+    @check_score_visibility
+    def custom_scoreboard():
+        """
+        自定义排行榜页面
+        """
+        # 获取所有学校列表
+        school_field = Fields.query.filter_by(name="学校名称", type="team").first()
+        schools = []
+        
+        if school_field:
+            entries = FieldEntries.query.filter_by(field_id=school_field.id).all()
+            schools_set = set()
+            for entry in entries:
+                if entry.value:
+                    try:
+                        value = json.loads(entry.value) if isinstance(entry.value, str) and entry.value.startswith('"') else entry.value
+                        if value and value.strip():
+                            schools_set.add(value.strip())
+                    except:
+                        if entry.value.strip():
+                            schools_set.add(entry.value.strip())
+            
+            schools = sorted(list(schools_set))
+        
+        return render_template('scoreboard/custom_scoreboard.html', schools=schools)
+    
+    # 注册页面蓝图
+    app.register_blueprint(page_bp)
+    
+    print("[ctfd-paihangb] 路由注册成功")
+    print("[ctfd-paihangb] 页面地址: /scoreboard/custom")
     print("[ctfd-paihangb] API 地址: /api/v1/top10/leaderboards")
     print("[ctfd-paihangb] API 地址: /api/v1/teams/track/<track_name>")

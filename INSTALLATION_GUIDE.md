@@ -58,9 +58,9 @@ sudo systemctl restart ctfd
 
 ```
 ctfd-paihangb/
-├── __init__.py                          # 插件入口
+├── __init__.py                          # 插件入口，注册 Blueprint
 ├── config.json                          # 插件配置
-├── routes.py                            # 路由和 API 端点
+├── routes.py                            # 路由和 API 端点（包含页面路由）
 ├── scores.py                            # 分数计算逻辑
 ├── install.sh                           # 安装脚本
 ├── templates/
@@ -111,50 +111,52 @@ ctfd-paihangb/
 - 前端过滤，响应迅速
 - 支持模糊匹配
 
-### 3. 自动功能
-
-#### 自动刷新
-- 每30秒自动请求最新数据
-- 无需手动刷新页面
-- 确保数据实时性
-
-#### 自动排名
-- 按总分从高到低排序
-- 分数相同时按最后解题时间排序
-- 动态计算，实时更新
-
 ## 🔧 技术实现
+
+### 页面路由
+
+```python
+# 访问地址
+GET /scoreboard/custom
+
+# 返回排行榜页面，包含学校列表数据
+```
 
 ### API 接口
 
-插件提供以下 API 端点：
-
-#### 获取排行榜数据
+#### 1. 获取前10名排行榜数据
 
 ```http
-GET /api/scoreboard/data
+GET /api/v1/top10/leaderboards
 ```
-
-**查询参数**：
-- `track` (可选): 赛道筛选，可选值：`新生赛道`、`进阶赛道`、`社会赛道`
-- `school` (可选): 学校筛选，填写学校名称
 
 **响应示例**：
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "rank": 1,
-      "team_id": 1,
-      "team_name": "Team Alpha",
-      "school": "北京大学",
-      "track": "新生赛道",
-      "score": 1000,
-      "solve_count": 10,
-      "last_solve": "2025-11-18T12:00:00"
-    }
-  ]
+  "data": {
+    "all": [...],
+    "new": [...],
+    "upper": [...],
+    "social": [...]
+  }
+}
+```
+
+#### 2. 获取指定赛道的团队 ID
+
+```http
+GET /api/v1/teams/track/<track_name>
+```
+
+**参数**：
+- `track_name`: 赛道名称（新生赛道/进阶赛道/社会赛道）
+
+**响应示例**：
+```json
+{
+  "success": true,
+  "data": [1, 2, 3, 4, 5]
 }
 ```
 
@@ -180,48 +182,11 @@ GET /api/scoreboard/data
 └─────────────────────────────────────────────────────┘
 ```
 
-- **总榜**：蓝色主题
-- **新生榜**：绿色主题
-- **进阶榜**：青色主题
-- **社会榜**：灰色主题
+### 响应式设计
 
-### 筛选器面板
-
-```
-┌──────────────────────────────────────────┐
-│  🔍 筛选器                               │
-│                                          │
-│  学校：[下拉选择所有学校]                 │
-│  搜索：[输入队伍名称]                     │
-│  [重置筛选]                              │
-└──────────────────────────────────────────┘
-```
-
-### 排行榜表格
-
-```
-┌──────┬────────────┬────────────┬──────────┬────────┬──────┐
-│ 排名 │ 队伍名称    │ 学校       │ 赛道     │ 解题数 │ 总分 │
-├──────┼────────────┼────────────┼──────────┼────────┼──────┤
-│  🥇  │ Team A     │ 北京大学   │ 新生赛道 │   10   │ 1000 │
-│  🥈  │ Team B     │ 清华大学   │ 进阶赛道 │    8   │  900 │
-│  🥉  │ Team C     │ 复旦大学   │ 新生赛道 │    7   │  800 │
-│   4  │ Team D     │ 上海交大   │ 社会赛道 │    6   │  700 │
-└──────┴────────────┴────────────┴──────────┴────────┴──────┘
-```
-
-### 排名徽章
-
-- **第1名**：🥇 金色渐变
-- **第2名**：🥈 银色渐变
-- **第3名**：🥉 铜色渐变
-- **其他**：灰色背景
-
-### 赛道徽章
-
-- **新生赛道**：绿色徽章 `badge-success`
-- **进阶赛道**：青色徽章 `badge-info`
-- **社会赛道**：灰色徽章 `badge-secondary`
+- **桌面端**：完整显示所有列
+- **平板端**：隐藏部分列
+- **手机端**：按钮纵向排列，表格横向滚动
 
 ## 📖 使用指南
 
@@ -232,8 +197,6 @@ GET /api/scoreboard/data
 ```
 http://your-ctfd-url/scoreboard/custom
 ```
-
-或在 CTFd 导航栏添加链接（需要管理员配置）。
 
 ### 操作步骤
 
@@ -255,91 +218,49 @@ http://your-ctfd-url/scoreboard/custom
 2. 在"学校"下拉框选择目标学校
 3. 自动过滤显示结果
 
-#### 4. 搜索队伍
-
-1. 在搜索框输入队伍名称（支持模糊匹配）
-2. 实时过滤显示结果
-3. 保持当前的赛道和学校筛选
-
-#### 5. 重置筛选
-
-1. 点击"重置"按钮
-2. 清除所有筛选条件
-3. 返回当前榜单的完整列表
-
-## 🔄 数据流程
-
-```
-用户访问页面
-    ↓
-加载初始数据（总榜）
-    ↓
-用户切换榜单/筛选
-    ↓
-AJAX 请求 API
-    ↓
-后端查询数据（带缓存）
-    ↓
-计算排名
-    ↓
-返回 JSON 数据
-    ↓
-前端渲染更新
-    ↓
-30秒后自动刷新
-```
-
 ## 🐛 故障排除
 
-### 问题 1：排行榜显示为空
+### 问题 1：页面无法访问（404 错误）
+
+**症状**：访问 `/scoreboard/custom` 显示 404
+
+**可能原因**：
+- 插件未正确加载
+- 路由未注册
+
+**解决方法**：
+
+1. 检查插件加载状态：
+   ```bash
+   docker compose logs ctfd | grep "ctfd-paihangb"
+   ```
+   
+   应该看到：
+   ```
+   [ctfd-paihangb] 插件加载成功
+   [ctfd-paihangb] 路由注册成功
+   [ctfd-paihangb] 页面地址: /scoreboard/custom
+   ```
+
+2. 重启 CTFd：
+   ```bash
+   cd /opt/CTFd
+   docker compose restart ctfd
+   ```
+
+### 问题 2：排行榜显示为空
 
 **症状**：页面加载完成，但没有显示任何队伍
 
 **可能原因**：
 - ctfd-tuandui 插件未安装
 - 团队没有填写"参与赛道"字段
-- 数据库中没有团队数据
 
 **解决方法**：
 
-1. 确认前置插件已安装：
-   ```bash
-   ls -la /opt/CTFd/CTFd/plugins/ | grep -E "ctfd-user|ctfd-tuandui"
-   ```
-
-2. 检查团队赛道数据：
-   ```sql
-   SELECT t.id, t.name, tfe.value as track
-   FROM teams t
-   LEFT JOIN field_entries tfe ON t.id = tfe.team_id
-   LEFT JOIN fields f ON tfe.field_id = f.id
-   WHERE f.name = '参与赛道';
-   ```
-
-3. 查看插件加载状态：
-   ```bash
-   docker compose logs ctfd | grep "ctfd-paihangb"
-   ```
-
-### 问题 2：数据不刷新
-
-**症状**：排行榜数据长时间不更新
-
-**解决方法**：
-
-1. 清除浏览器缓存：按 `Ctrl + Shift + R` 强制刷新
-
-2. 清除服务器缓存：
-   ```python
-   # 在 CTFd Python 环境中执行
-   from CTFd.cache import cache
-   cache.clear()
-   ```
-
-3. 检查自动刷新功能：
-   - 打开浏览器开发者工具（F12）
-   - 查看 Console 标签是否有错误
-   - 查看 Network 标签确认 API 请求
+1. 确认前置插件已安装
+2. 检查团队赛道数据
+3. 查看插件加载状态
 
 ### 问题 3：样式显示异常
 
@@ -349,54 +270,28 @@ AJAX 请求 API
 
 1. 检查 CSS 文件加载：
    - 打开开发者工具 → Network 标签
-   - 刷新页面
-   - 查找 `scoreboard.css` 是否成功加载（状态码 200）
+   - 查找 `scoreboard.css` 是否成功加载
 
-2. 清除浏览器缓存并强制刷新
+2. 清除浏览器缓存并强制刷新（Ctrl + Shift + R）
 
-3. 检查文件权限：
-   ```bash
-   ls -la /opt/CTFd/CTFd/plugins/ctfd-paihangb/assets/
-   ```
+### 问题 4：学校下拉框为空
 
-### 问题 4：API 请求失败
+**症状**：筛选器中的学校下拉框没有选项
 
-**症状**：浏览器控制台显示 404 或 500 错误
+**可能原因**：
+- 团队没有填写"学校名称"字段
+- ctfd-tuandui 插件未正确配置
 
 **解决方法**：
 
-1. 检查路由注册：
-   ```bash
-   docker compose logs ctfd | grep "route"
-   ```
-
-2. 验证 API 端点：
-   ```bash
-   curl http://localhost:8000/api/scoreboard/data
-   ```
-
-3. 查看详细错误日志：
-   ```bash
-   docker compose logs ctfd -f
-   ```
-
-### 问题 5：筛选功能不工作
-
-**症状**：选择学校或赛道后没有反应
-
-**解决方法**：
-
-1. 检查 JavaScript 错误：
-   - F12 → Console 标签
-   - 查看是否有错误信息
-
-2. 验证数据格式：
-   - 确保团队的"学校名称"和"参与赛道"字段格式正确
-   - 字段值应与预期完全匹配
-
-3. 检查 JS 文件加载：
-   ```bash
-   ls -la /opt/CTFd/CTFd/plugins/ctfd-paihangb/assets/js/
+1. 确保团队已填写"学校名称"字段
+2. 检查数据库中的字段数据：
+   ```sql
+   SELECT t.name, fe.value 
+   FROM teams t
+   JOIN field_entries fe ON t.id = fe.team_id
+   JOIN fields f ON fe.field_id = f.id
+   WHERE f.name = '学校名称';
    ```
 
 ## 🔗 依赖关系
@@ -416,103 +311,32 @@ ctfd-user (用户插件)
 **必须按照以下顺序安装**：
 
 1. **第一步**：安装 ctfd-user
-   ```bash
-   cd /opt/CTFd/CTFd/plugins
-   git clone https://github.com/fpclose/ctfd_3.8.1_user.git ctfd-user
-   cd ctfd-user && sudo ./install.sh
-   ```
-
 2. **第二步**：安装 ctfd-tuandui
-   ```bash
-   cd /opt/CTFd/CTFd/plugins
-   git clone https://github.com/fpclose/ctfd_3.8.1_tuandui.git ctfd-tuandui
-   cd ctfd-tuandui && sudo ./install.sh
-   ```
-
 3. **第三步**：安装 ctfd-paihangb
-   ```bash
-   cd /opt/CTFd/CTFd/plugins
-   git clone https://github.com/fpclose/ctfd_3.8.1_paihangbang.git ctfd-paihangb
-   cd ctfd-paihangb && sudo ./install.sh
-   ```
-
 4. **第四步**：重启 CTFd
-   ```bash
-   cd /opt/CTFd
-   docker compose restart ctfd
-   ```
-
-## 🎨 自定义配置
-
-### 修改刷新间隔
-
-编辑 `assets/js/scoreboard.js`：
-
-```javascript
-// 默认 30 秒
-const REFRESH_INTERVAL = 30000;
-
-// 修改为 60 秒
-const REFRESH_INTERVAL = 60000;
-```
-
-### 修改缓存时间
-
-编辑 `routes.py`：
-
-```python
-# 默认 60 秒
-@cache.memoize(timeout=60)
-
-# 修改为 120 秒
-@cache.memoize(timeout=120)
-```
-
-### 自定义颜色方案
-
-编辑 `assets/css/scoreboard.css`，修改对应的颜色值。
-
-### 添加自定义赛道
-
-如果需要支持新的赛道类型：
-
-1. 在 ctfd-tuandui 插件中添加赛道选项
-2. 在本插件的前端代码中添加对应按钮
-3. 重启 CTFd
-
-## 📊 使用场景
-
-### 场景 1：查看新生榜
-
-```
-目的：查看新生组的排名情况
-操作：点击"新生榜"按钮
-结果：只显示新生赛道的团队，按分数排名
-```
-
-### 场景 2：查看某学校在进阶榜的排名
-
-```
-操作步骤：
-  1. 点击"进阶榜"按钮
-  2. 展开筛选器
-  3. 选择目标学校
-  
-结果：显示该学校在进阶赛道的所有队伍及排名
-```
-
-### 场景 3：搜索特定队伍
-
-```
-操作：在搜索框输入队伍名称关键词
-结果：实时过滤显示匹配的队伍
-```
 
 ## 📚 相关文档
 
 - [ctfd-user 插件](https://github.com/fpclose/ctfd_3.8.1_user)
 - [ctfd-tuandui 插件](https://github.com/fpclose/ctfd_3.8.1_tuandui)
 - [CTFd 官方文档](https://docs.ctfd.io/)
+
+## 🔄 更新日志
+
+### v1.0.1 (2025-11-18)
+
+- 🐛 **修复页面路由缺失**：添加 `/scoreboard/custom` 页面路由
+- ✨ **添加 Blueprint 注册**：支持模板和静态文件
+- 🎨 **修复 Bootstrap 5 兼容性**：更新模板语法
+- 📊 **添加学校列表获取**：自动获取并传递学校列表到模板
+- 📝 **完善文档**：更新安装指南和故障排除
+
+### v1.0.0 (2025-11-16)
+
+- ✨ 初始版本发布
+- ✅ 支持四大榜单切换
+- ✅ 支持学校筛选
+- ✅ 支持实时搜索
 
 ## 🤝 贡献
 
@@ -529,7 +353,7 @@ const REFRESH_INTERVAL = 60000;
 
 ---
 
-**版本**: 1.0.0  
+**版本**: 1.0.1  
 **兼容**: CTFd 3.8.1  
 **依赖**: ctfd-user, ctfd-tuandui  
 **最后更新**: 2025-11-18
